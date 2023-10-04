@@ -54,6 +54,7 @@ def load_glasgow_norms(filename):
         # our_dataframe['word2'] = our_dataframe['word2'].str.upper()
     return our_dataframe
 
+
 config = helper.read_config()
 
 credentials = dict({'host': config['database']['host'],
@@ -70,7 +71,7 @@ edges_files_folder = config['folders']['edges_files_folder']
 purecdi_dataframe = ev.get_wordbank_wordlist_from_mysql(credentials, config['database']['observ_data_table'])
 english_american_frame = ev.load_english_american(english_american_file)
 cdi_replace_frame = ev.load_cdi_replace(cdi_replace_file)
-glasgow_norms_frame = ev.load_glasgow_norms(glasgow_file)
+glasgow_norms_frame = load_glasgow_norms(glasgow_file)
 
 print("Psycholinguistic relationships...")
 glasgow_norms_frame = ev.replace_from_dictionary(glasgow_norms_frame, cdi_replace_frame, 'word')  # standardise CDI
@@ -101,52 +102,44 @@ glasgow_cue_match_results = pd.merge(glasgow_norms_frame,
                                      indicator=True)
 glasgow_filtered_cue_matches = glasgow_cue_match_results[(glasgow_cue_match_results['_merge'] == 'both')]
 glasgow_filtered_cue_matches.drop('_merge', axis=1, inplace=True)
+
 col_dtypes = {
     'CUE': 'string',
     'TARGET': 'string',
     'WEIGHT': 'float',
     'REVSTR': 'string'
 }
-##########
-# threshold = 0.5
 
-# ------------ Define dataframes ----------
-glasgow_arousal = pd.DataFrame(columns=col_dtypes)
-glasgow_valence = pd.DataFrame(columns=col_dtypes)
-glasgow_dominance = pd.DataFrame(columns=col_dtypes)
-glasgow_concreteness = pd.DataFrame(columns=col_dtypes)
-glasgow_imageability = pd.DataFrame(columns=col_dtypes)
-glasgow_familiarity = pd.DataFrame(columns=col_dtypes)
-glasgow_aoa = pd.DataFrame(columns=col_dtypes)
-glasgow_size = pd.DataFrame(columns=col_dtypes)
-glasgow_gender = pd.DataFrame(columns=col_dtypes)
+attributes = [
+    ("arousal", "arou.m", "glasgow_arousal_edges.csv"),
+    ("valence", "val.m", "glasgow_valence_edges.csv"),
+    ("dominance", "dom.m", "glasgow_dominance_edges.csv"),
+    ("concreteness", "cnc.m", "glasgow_concreteness_edges.csv"),
+    ("imageability", "imag.m", "glasgow_imageability_edges.csv"),
+    ("familiarity", "fam.m", "glasgow_familiarity_edges.csv"),
+    ("aoa", "aoa.m", "glasgow_aoa_edges.csv"),
+    ("size", "size.m", "glasgow_size_edges.csv"),
+    ("gender", "gend.m", "glasgow_gend_edges.csv")
+]
+
+dfs = {attr[0]: pd.DataFrame(columns=col_dtypes) for attr in attributes}
+
+
+def generate_glasgow_connections(attribute, mean_type, csv_title):
+    threshold = float(config['edges_threshold']['glasgow'])
+    print(ev.generate_connection_weights(
+        attribute.capitalize(),
+        'word',
+        mean_type,
+        csv_title,
+        dfs[attribute],
+        threshold,
+        edges_files_folder,
+        glasgow_filtered_cue_matches,
+        purecdi_dataframe
+    ))
+
 
 # ----------------------- generate glasgow connections ---------------------------
-threshold = config['edges_threshold']['glasgow']
-print(ev.generate_connection_weights('Arousal', 'word', 'arou.m', 'glasgow_arousal_edges.csv',
-                                     glasgow_arousal, float(threshold), edges_files_folder,
-                                     glasgow_filtered_cue_matches, purecdi_dataframe))
-print(ev.generate_connection_weights('Valence', 'word', 'val.m', 'glasgow_valence_edges.csv',
-                                     glasgow_valence, float(threshold), edges_files_folder,
-                                     glasgow_filtered_cue_matches, purecdi_dataframe))
-print(ev.generate_connection_weights('Dominance', 'word', 'dom.m', 'glasgow_dominance_edges.csv',
-                                     glasgow_dominance, float(threshold), edges_files_folder,
-                                     glasgow_filtered_cue_matches, purecdi_dataframe))
-print(ev.generate_connection_weights('Concreteness', 'word', 'cnc.m', 'glasgow_concreteness_edges.csv',
-                                     glasgow_concreteness, float(threshold), edges_files_folder,
-                                     glasgow_filtered_cue_matches, purecdi_dataframe))
-print(ev.generate_connection_weights('Imageability', 'word', 'imag.m', 'glasgow_imageability_edges.csv',
-                                     glasgow_imageability, float(threshold), edges_files_folder,
-                                     glasgow_filtered_cue_matches, purecdi_dataframe))
-print(ev.generate_connection_weights('Familiarity', 'word', 'fam.m', 'glasgow_familiarity_edges.csv',
-                                     glasgow_familiarity, float(threshold), edges_files_folder,
-                                     glasgow_filtered_cue_matches, purecdi_dataframe))
-print(ev.generate_connection_weights('AOA', 'word', 'aoa.m', 'glasgow_aoa_edges.csv',
-                                     glasgow_aoa, float(threshold), edges_files_folder,
-                                     glasgow_filtered_cue_matches, purecdi_dataframe))
-print(ev.generate_connection_weights('Size', 'word', 'size.m', 'glasgow_size_edges.csv',
-                                     glasgow_size, float(threshold), edges_files_folder,
-                                     glasgow_filtered_cue_matches, purecdi_dataframe))
-print(ev.generate_connection_weights('Gender', 'word', 'gend.m', 'glasgow_gend_edges.csv',
-                                     glasgow_gender, float(threshold), edges_files_folder,
-                                     glasgow_filtered_cue_matches, purecdi_dataframe))
+for attribute, mean_type, csv_title in attributes:
+    generate_glasgow_connections(attribute, mean_type, csv_title)
