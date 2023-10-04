@@ -1,5 +1,6 @@
 # A Roxburgh 2022
 # Sensorimnotor Graph Creator
+# Version 1.1
 
 import pandas as pd
 import helper

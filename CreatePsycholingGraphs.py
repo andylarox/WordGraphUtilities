@@ -1,5 +1,6 @@
 # A Roxburgh 2022
 # Psycholinguistic Relationship Graphs Creator
+# version 1.1
 
 import pandas as pd
 import helper

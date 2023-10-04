@@ -1,3 +1,7 @@
+# A Roxburgh 2022
+# Nelson Graph Creator
+# Version 1.0
+
 import pandas as pd
 import mylibrary as ev
 import helper

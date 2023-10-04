@@ -1,6 +1,6 @@
 # A Roxburgh 2022
 # Rhyming Graph Creator
-# Version 1
+# Version 1.0
 
 import pandas as pd
 import helper
