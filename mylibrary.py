@@ -29,12 +29,10 @@ def limit_and_normalise(input_frame, limit, weight_column):
 
     # reduce to top n (limit)
     input_frame = input_frame.head(limit)
-    # normalise weights
 
+    # normalise weights
     scaler = MinMaxScaler()
-    # scaler = scaler.fit(input_frame)
     input_frame[[weight_column]] = scaler.fit_transform(input_frame[[weight_column]])
-    # scaler.transform(input_frame)
 
     return input_frame
 
@@ -81,7 +79,7 @@ def load_buchanan(filename):
         encoding="ISO-8859-1",
         engine='python'
     )
-    # convert to `capitals
+    # convert to capitals
     for columns in our_dataframe.columns:
         our_dataframe['CUE'] = our_dataframe['CUE'].str.upper()
         our_dataframe['TARGET'] = our_dataframe['TARGET'].str.upper()
@@ -108,7 +106,7 @@ def load_cdi_replace(filename):
 
 def get_wordbank_wordlist_from_mysql(credentials, targettable):
     # get full list of words being used in the observational data
-    # we use this to restrict the graphs
+    # we use this to limit the graphs
 
     # Set up connection to MySQL server
     mydb = mysql.connector.connect(
@@ -160,29 +158,23 @@ def add_missing_loops(active_frame, purecdi_dataframe, source, targ, wt, framena
     print("active_frame dataset can generate " + str(len(active_frame_filtered_cue_targ_matches.index)) + " edges.")
 
     # create self-loops frame
-    # cue non-matches
-    # print('cues')
     # get cue results that do not match cdi (i.e. cdi only)
     unconnected_cue_active_frame = active_frame_cue_match_results[(active_frame_cue_match_results['_merge'] == 'right_only')]
     unconnected_cue_active_frame[source] = unconnected_cue_active_frame['word']
     unconnected_cue_active_frame[targ] = unconnected_cue_active_frame['word']
     unconnected_cue_active_frame[wt] = 0
-    # print summary
-    # print(unconnected_cue_active_frame.to_string())
+
     # drop merge cols
     unconnected_cue_active_frame.drop(['_merge', 'word'], axis=1, inplace=True)
 
     # now check targets
-    # print('targets')
     # get target results that do not match cdi (i.e. cdi only)
     unconnected_target_active_frame = active_frame_cue_target_match_results[
         (active_frame_cue_target_match_results['_merge'] == 'right_only')]
-    # print(unconnected_target_active_frame.to_string())
 
     unconnected_target_active_frame[source] = unconnected_target_active_frame['word_y']
     unconnected_target_active_frame[targ] = unconnected_target_active_frame['word_y']
     unconnected_target_active_frame[wt] = 0
-    #  print(unconnected_target_active_frame.to_string())
     unconnected_target_active_frame.drop(['_merge', 'word_x', 'word_y'], axis=1, inplace=True)
 
     # merge
@@ -191,7 +183,6 @@ def add_missing_loops(active_frame, purecdi_dataframe, source, targ, wt, framena
     active_frame_edges_output_frame = combined_frame[[source, targ, wt]].copy(deep=True)
     active_frame_edges_output_frame.rename(columns={source: 'source', targ: 'target', wt: 'weight'}, inplace=True)
 
-    # print("self loops to add: " + unconnected_active_frame.to_string())
     print(framename + " dataset will have " + str(len(unconnected_active_frame.index)) + " unconnected nodes.")
 
     return active_frame_edges_output_frame
@@ -236,8 +227,6 @@ def generate_connection_weights(data_name, wrdcolname, column_name, output_filen
         sys.stdout.flush()
 
         for index2, row2 in filtered_cue_matches_frame.iterrows():
-
-            # print(row[wrdcolname], row['Auditory.mean'], row2[wrdcolname], row2['Auditory.mean'])
             cue_weight = float(row[lancaster_column])
             tgt_weight = float(row2[lancaster_column])
             new_weight = calculate_weight(cue_weight, tgt_weight, max_weight, min_weight)
