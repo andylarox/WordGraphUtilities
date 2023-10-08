@@ -76,7 +76,7 @@ credentials = dict({'host': config['database']['host'],
 
 cdi_replace_file = config['folders']['cleansing_dictionaries'] + config['files']['cdi_replace']
 english_american_file = config['folders']['cleansing_dictionaries'] + config['files']['english_american']
-
+limit = config['edges_threshold']['limit']
 lancaster_sensorimotor_norms = config['folders']['norms'] + config['files']['Lancaster_sensorimotor']
 lancaster_sensorimotor_norms_frame = load_lancaster_sensorimotor_norms(lancaster_sensorimotor_norms)
 
@@ -134,7 +134,7 @@ categories = [
 
 dfs = {category: pd.DataFrame(columns=col_dtypes) for category in categories}
 
-def generate_connections(category, sensory_type, mean_type):
+def generate_connections(category, sensory_type, mean_type, limit):
     threshold_key = f'lancaster_{category}'
     threshold = float(config['edges_threshold'][threshold_key])
     file_name = f'lancaster_{category}_edges.csv'
@@ -142,10 +142,10 @@ def generate_connections(category, sensory_type, mean_type):
     return ev.generate_connection_weights(
         sensory_type, 'Word', f'{mean_type}.mean', file_name,
         dfs[category], threshold, edges_files_folder,
-        lancaster_filtered_cue_matches, purecdi_dataframe
+        lancaster_filtered_cue_matches, purecdi_dataframe, limit
     )
 
 for category in categories:
     sensory_type = category.capitalize()
-    print(generate_connections(category, sensory_type, sensory_type))
+    print(generate_connections(category, sensory_type, sensory_type,limit))
 
