@@ -1,6 +1,6 @@
 # A Roxburgh 2022
 # Psycholinguistic Relationship Graphs Creator
-# version 1.1
+# version 1.2
 
 import pandas as pd
 import helper
@@ -62,7 +62,7 @@ credentials = dict({'host': config['database']['host'],
                     'username': config['database']['username'],
                     'password': config['database']['password'],
                     'database': config['database']['database']})
-
+limit = config['edges_threshold']['limit']
 cdi_replace_file = config['folders']['cleansing_dictionaries'] + config['files']['cdi_replace']
 english_american_file = config['folders']['cleansing_dictionaries'] + config['files']['english_american']
 
@@ -76,6 +76,39 @@ glasgow_norms_frame = load_glasgow_norms(glasgow_file)
 
 print("Psycholinguistic relationships...")
 glasgow_norms_frame = ev.replace_from_dictionary(glasgow_norms_frame, cdi_replace_frame, 'word')  # standardise CDI
+
+
+def compute_normalized_word_size(dataframe):
+    dataframe['word_size'] = dataframe['word'].apply(
+        lambda x: len(''.join(c for c in x if c.isalpha()))
+    )
+    max_word_size = dataframe['word_size'].max()
+    dataframe['word_size'] = dataframe['word_size'] / max_word_size
+
+    return dataframe
+
+
+glasgow_norms_frame = compute_normalized_word_size(glasgow_norms_frame)
+
+
+# New function to preprocess gender data and add two new columns...
+def preprocess_gender_data(dataframe, threshold=4.143):
+    dataframe['male'] = dataframe['gend.m'].apply(
+        lambda x: x if x >= threshold else 0
+    )
+    dataframe['female'] = dataframe['gend.m'].apply(
+        lambda x: 6.971 - x if x < threshold else 0
+    )
+
+    # Normalizing male and female columns to range [0, 1]
+    dataframe['male'] = dataframe['male'] / dataframe['male'].max()
+    dataframe['female'] = dataframe['female'] / dataframe['female'].max()
+
+    return dataframe
+
+
+# Updating the main dataframe with the new columns...
+glasgow_norms_frame = preprocess_gender_data(glasgow_norms_frame)
 
 # count possible nodes and edges
 df3_merged = pd.merge(glasgow_norms_frame,
@@ -111,23 +144,25 @@ col_dtypes = {
     'REVSTR': 'string'
 }
 
+# Defining attributes with threshold value from config.
 attributes = [
-    ("arousal", "arou.m", "glasgow_arousal_edges.csv"),
-    ("valence", "val.m", "glasgow_valence_edges.csv"),
-    ("dominance", "dom.m", "glasgow_dominance_edges.csv"),
-    ("concreteness", "cnc.m", "glasgow_concreteness_edges.csv"),
-    ("imageability", "imag.m", "glasgow_imageability_edges.csv"),
-    ("familiarity", "fam.m", "glasgow_familiarity_edges.csv"),
-    ("aoa", "aoa.m", "glasgow_aoa_edges.csv"),
-    ("size", "size.m", "glasgow_size_edges.csv"),
-    ("gender", "gend.m", "glasgow_gend_edges.csv")
+    ("word_size", "word_size", "glasgow_word_size_edges.csv", config['edges_threshold']['word_size']),
+    ("aoa", "aoa.m", "glasgow_aoa_edges.csv", config['edges_threshold']['aoa']),
+    ("male", "male", "glasgow_male_edges.csv", config['edges_threshold']['male']),
+    ("female", "female", "glasgow_female_edges.csv", config['edges_threshold']['female']),
+    ("size", "size.m", "glasgow_size_edges.csv", config['edges_threshold']['size']),
+    ("arousal", "arou.m", "glasgow_arousal_edges.csv", config['edges_threshold']['arousal']),
+    ("valence", "val.m", "glasgow_valence_edges.csv", config['edges_threshold']['valence']),
+    ("concreteness", "cnc.m", "glasgow_concreteness_edges.csv", config['edges_threshold']['concreteness']),
+    ("imageability", "imag.m", "glasgow_imageability_edges.csv", config['edges_threshold']['imageability']),
+    ("familiarity", "fam.m", "glasgow_familiarity_edges.csv", config['edges_threshold']['familiarity']),
+    ("dominance", "dom.m", "glasgow_dominance_edges.csv", config['edges_threshold']['dominance'])
 ]
 
 dfs = {attr[0]: pd.DataFrame(columns=col_dtypes) for attr in attributes}
 
 
-def generate_glasgow_connections(attribute, mean_type, csv_title):
-    threshold = float(config['edges_threshold']['glasgow'])
+def generate_glasgow_connections(attribute, mean_type, csv_title, threshold, limit):
     print(ev.generate_connection_weights(
         attribute.capitalize(),
         'word',
@@ -137,10 +172,10 @@ def generate_glasgow_connections(attribute, mean_type, csv_title):
         threshold,
         edges_files_folder,
         glasgow_filtered_cue_matches,
-        purecdi_dataframe
+        purecdi_dataframe, limit
     ))
 
 
 # ----------------------- generate glasgow connections ---------------------------
-for attribute, mean_type, csv_title in attributes:
-    generate_glasgow_connections(attribute, mean_type, csv_title)
+for attribute, mean_type, csv_title, threshold in attributes:
+    generate_glasgow_connections(attribute, mean_type, csv_title, float(threshold), limit)

@@ -1,3 +1,4 @@
+import math
 import sys
 import time
 import mysql.connector
@@ -197,18 +198,18 @@ def calculate_weight(cue, tgt, max, min):
     return round(weight, 7)
 
 
-def generate_connection_weights(data_name, wrdcolname, column_name, output_filename, frame, threshold, edges_files_folder, filtered_cue_matches_frame, purecdi_dataframe):
-    # TODO: move these to the passed parameters
-    verbose = False
-    limited = True
-    limit_value = 2000
-    if limited:
-        threshold = 0.3
+def generate_connection_weights(data_name, wrdcolname, column_name, output_filename, frame, threshold, edges_files_folder, filtered_cue_matches_frame, purecdi_dataframe, limit):
 
-    lancaster_column = column_name
+    verbose = False
+    # limited = True
+    # limit_value = 2000
+    # if limited:
+    #     threshold = 0.3
+
+    weights_column = column_name
     print(data_name + "...")
-    max_weight = filtered_cue_matches_frame[lancaster_column].max()
-    min_weight = filtered_cue_matches_frame[lancaster_column].min()
+    max_weight = filtered_cue_matches_frame[weights_column].max()
+    min_weight = filtered_cue_matches_frame[weights_column].min()
     start_time = time.time()
     x = 0
     average_edge_weight = 0.0
@@ -227,9 +228,12 @@ def generate_connection_weights(data_name, wrdcolname, column_name, output_filen
         sys.stdout.flush()
 
         for index2, row2 in filtered_cue_matches_frame.iterrows():
-            cue_weight = float(row[lancaster_column])
-            tgt_weight = float(row2[lancaster_column])
-            new_weight = calculate_weight(cue_weight, tgt_weight, max_weight, min_weight)
+            cue_weight = float(row[weights_column])
+            tgt_weight = float(row2[weights_column])
+            if data_name == 'Word_size' or data_name == 'AOA':
+                new_weight = 1-(abs(cue_weight - tgt_weight))
+            else:
+                new_weight = calculate_weight(cue_weight, tgt_weight, max_weight, min_weight)
 
             # if both words the same, connection is 1.0
             if row[wrdcolname] == row2[wrdcolname]:
@@ -237,8 +241,8 @@ def generate_connection_weights(data_name, wrdcolname, column_name, output_filen
                     new_weight = 1.0
                 else:
                     new_weight = 0
-            else:
-                new_weight = calculate_weight(cue_weight, tgt_weight, max_weight, min_weight)
+            # else:
+            #    new_weight = calculate_weight(cue_weight, tgt_weight, max_weight, min_weight)
 
             beforetotal = beforetotal + 1
             total_edge_weight = total_edge_weight + new_weight
@@ -255,8 +259,8 @@ def generate_connection_weights(data_name, wrdcolname, column_name, output_filen
                         frame = frame.append(new_row, ignore_index=True)
 
     frame.drop('REVSTR', axis=1, inplace=True)
-    if limited == True:
-        frame = limit_and_normalise(frame, int(limit_value), 'WEIGHT')
+
+    frame = limit_and_normalise(frame, int(limit), 'WEIGHT')
 
     out_frame = add_missing_loops(frame, purecdi_dataframe, 'CUE', 'TARGET', 'WEIGHT', data_name)
     beforetotal = beforetotal + len(out_frame)
