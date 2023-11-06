@@ -1,6 +1,7 @@
 # A Roxburgh 2022
 # Rhyming Graph Creator
 # Version 1.0
+import os
 
 import pandas as pd
 import helper
@@ -32,10 +33,10 @@ credentials = dict({'host': config['database']['host'],
                     'password': config['database']['password'],
                     'database': config['database']['database']})
 
-cdi_replace_file = config['folders']['cleansing_dictionaries'] + config['files']['cdi_replace']
-english_american_file = config['folders']['cleansing_dictionaries'] + config['files']['english_american']
-rhyming_file = config['folders']['norms'] + config['files']['rhyming']
-edges_files_folder = config['folders']['edges_files_folder']
+cdi_replace_file = os.getcwd() + config['folders']['cleansing_dictionaries'] + config['files']['cdi_replace']
+english_american_file = os.getcwd() + config['folders']['cleansing_dictionaries'] + config['files']['english_american']
+rhyming_file = os.getcwd() + config['folders']['norms'] + config['files']['rhyming']
+edges_files_folder = os.getcwd() + config['folders']['edges_files_folder']
 purecdi_dataframe = ev.get_wordbank_wordlist_from_mysql(credentials, config['database']['observ_data_table'])
 english_american_frame = ev.load_english_american(english_american_file)
 cdi_replace_frame = ev.load_cdi_replace(cdi_replace_file)

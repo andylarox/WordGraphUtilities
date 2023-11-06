@@ -1,6 +1,7 @@
 # A Roxburgh 2022
 # Psycholinguistic Relationship Graphs Creator
 # version 1.2
+import os
 
 import pandas as pd
 import helper
@@ -63,11 +64,11 @@ credentials = dict({'host': config['database']['host'],
                     'password': config['database']['password'],
                     'database': config['database']['database']})
 limit = config['edges_threshold']['limit']
-cdi_replace_file = config['folders']['cleansing_dictionaries'] + config['files']['cdi_replace']
-english_american_file = config['folders']['cleansing_dictionaries'] + config['files']['english_american']
+cdi_replace_file = os.getcwd() + config['folders']['cleansing_dictionaries'] + config['files']['cdi_replace']
+english_american_file = os.getcwd() + config['folders']['cleansing_dictionaries'] + config['files']['english_american']
 
-glasgow_file = config['folders']['norms'] + config['files']['glasgow']
-edges_files_folder = config['folders']['edges_files_folder']
+glasgow_file = os.getcwd() + config['folders']['norms'] + config['files']['glasgow']
+edges_files_folder = os.getcwd() + config['folders']['edges_files_folder']
 
 purecdi_dataframe = ev.get_wordbank_wordlist_from_mysql(credentials, config['database']['observ_data_table'])
 english_american_frame = ev.load_english_american(english_american_file)
@@ -91,7 +92,7 @@ def compute_normalized_word_size(dataframe):
 glasgow_norms_frame = compute_normalized_word_size(glasgow_norms_frame)
 
 
-# New function to preprocess gender data and add two new columns...
+# function to preprocess gender data and add two new columns...
 def preprocess_gender_data(dataframe, threshold=4.143):
     dataframe['male'] = dataframe['gend.m'].apply(
         lambda x: x if x >= threshold else 0
@@ -103,6 +104,9 @@ def preprocess_gender_data(dataframe, threshold=4.143):
     # Normalizing male and female columns to range [0, 1]
     dataframe['male'] = dataframe['male'] / dataframe['male'].max()
     dataframe['female'] = dataframe['female'] / dataframe['female'].max()
+
+    # Create 'gender' column as the maximum of the 'male' and 'female' scores
+    dataframe['gender'] = dataframe[['male', 'female']].max(axis=1)
 
     return dataframe
 
@@ -146,10 +150,11 @@ col_dtypes = {
 
 # Defining attributes with threshold value from config.
 attributes = [
-    ("word_size", "word_size", "glasgow_word_size_edges.csv", config['edges_threshold']['word_size']),
     ("aoa", "aoa.m", "glasgow_aoa_edges.csv", config['edges_threshold']['aoa']),
+    ("word_size", "word_size", "glasgow_word_size_edges.csv", config['edges_threshold']['word_size']),
     ("male", "male", "glasgow_male_edges.csv", config['edges_threshold']['male']),
     ("female", "female", "glasgow_female_edges.csv", config['edges_threshold']['female']),
+    ("gender", "gender", "glasgow_gender_edges.csv", config['edges_threshold']['gender']),
     ("size", "size.m", "glasgow_size_edges.csv", config['edges_threshold']['size']),
     ("arousal", "arou.m", "glasgow_arousal_edges.csv", config['edges_threshold']['arousal']),
     ("valence", "val.m", "glasgow_valence_edges.csv", config['edges_threshold']['valence']),
